@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kim's Retirement Tool</title>
+    <style>
+        html {
+            height: 100%;
+        }
+        
+        body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            background-color: #ffffff;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%23e52244' fill-opacity='0.4' d='M1 3h1v1H1V3zm2-2h1v1H3V1z'%3E%3C/path%3E%3C/svg%3E");
+        }
+
+        #standard_retirement {
+            display: inline-block;
+        }
+
+        #early_retirement {
+            display: inline-block;
+            animation: glow 1s ease-out infinite alternate;
+            height: 5em;
+            width: 8em;
+            position: absolute;
+            background-color: green;
+            z-index: 1000;
+            border-radius: 10px;
+            border: none;
+            font-weight: bolder;
+        }
+
+        @keyframes rotation {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(359deg);
+            }
+        }
+
+        @keyframes glow {
+            0% {
+                border-color: #393;
+                box-shadow: 0 0 5px green;
+            }
+            100% {
+                border-color: #6f6;
+                box-shadow: 0 0 30px green;
+            }
+        }
+
+        #javascript_disabled {
+            margin: auto;
+            animation: rotation 10s linear infinite;
+            width: 10em;
+            height: 4em;
+            text-align: center;
+            font-size: xx-large;
+            font-weight: bolder;
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+        }
+
+        #retirement_button {
+            margin-left: auto;
+            margin-right: auto;
+            width: 10em;
+            display: block;
+            height: 4em;
+            font-size: xx-large;
+            font-weight: bolder;
+            box-shadow: black 0 0 5px 1px;
+            background-color: red;
+            border-radius: 10px;
+            border: none;
+        }
+    </style>
+</head>
+<body id="body">
+
+    <noscript>
+        <div id="javascript_disabled">
+            <span style="color: red">Nice try!</span> <span style="color: coral">No retirement for you!</span> <span style="color: purple">Javascript required!</span></div>
+    </noscript>
+
+    <h1 style="text-align: center; position: relative; background-color: white; margin-top: 0; padding-top: 10px; border-bottom: 1px solid black;">Time Until Retirement Enabled: <span id="time_left"></span></h1>
+    <div id="standard_retirement" style="width: 100%">
+        <button id="retirement_button" disabled>Retire</button>
+    </div>
+
+    <button tabindex="-1" id="early_retirement">Retire Early!</button>
+
+    <script src="https://moment.github.io/luxon/global/luxon.min.js" type="text/javascript"></script>
+<script>
+    let retirement_date = luxon.DateTime.local(2021, 12, 31, 23, 59, 59);
+    function setTimeRemaining() {
+        let now = luxon.DateTime.now()
+        let timeleft = luxon.Interval.fromDateTimes(now, retirement_date).toDuration().toFormat("d 'days', h 'hours', m 'minutes', 'and' s 'seconds'.");
+        if (now > retirement_date) {
+            body.onpointermove = null;
+            body.onpointerleave = null;
+            body.onresize = null;
+
+            clearInterval(window.timeRemainingInterval);
+
+            document.querySelector("#time_left").textContent = "You can retire!!!";
+            document.querySelector("#retirement_button").removeAttribute("disabled");
+            document.querySelector("#early_retirement").remove();
+        } else {
+            document.querySelector("#time_left").textContent = timeleft;
+        }
+    }
+
+    function recenter() {
+        let body = document.getElementById("body");
+        let early_retirement_button = document.getElementById("early_retirement");
+
+        let width = body.offsetWidth;
+        let height = body.offsetHeight;
+
+        early_retirement_button.style.top = ((height / 2) - (early_retirement_button.offsetHeight / 2)) + "px";
+        early_retirement_button.style.left = ((width / 2) - (early_retirement_button.offsetWidth / 2)) + "px";
+    }
+
+    function extractPositionValue(element, side) {
+        return parseInt(element.style[side].substr(0, element.style[side].length -2));
+    }
+
+    function moveHandler(event) {
+        let retirement = document.getElementById("early_retirement");
+
+        let top = extractPositionValue(retirement, "top");
+        let left = extractPositionValue(retirement, "left");
+
+        let bottom = top + retirement.offsetHeight;
+        let right = left + retirement.offsetWidth;
+
+        let center_x = (left + right) / 2;
+        let center_y = (top + bottom) / 2;
+
+        let threshold = 125;
+
+        let distance = Math.sqrt(Math.pow(event.clientX - center_x, 2) + Math.pow(event.clientY - center_y, 2));
+
+        if (distance < threshold) {
+            let movement = threshold - distance;
+
+            let diff_x = Math.abs((left + right) / 2.0 - event.clientX);
+            let diff_y = Math.abs((top + bottom) / 2.0 - event.clientY)
+            let total_diff = diff_x + diff_y;
+
+            let x_movement = movement * (diff_x / total_diff);
+            let y_movement = movement * (diff_y / total_diff);
+
+            if (x_movement > .25) {
+                if (event.clientX > center_x) { // Subtract from left, point is on the right
+                    retirement.style.left = (left - x_movement) + "px"
+                } else { // Add to left, point is on the left
+                    retirement.style.left = (left + x_movement) + "px"
+                }
+            }
+
+            if (y_movement > .25) {
+                if (event.clientY > center_y) {
+                    retirement.style.top = (top - y_movement) + "px";
+                } else {
+                    retirement.style.top = (top + y_movement) + "px";
+                }
+            }
+        }
+    }
+
+    function retire_click(event) {
+        alert("Congratulations! Enjoy your retirement! We'll miss you!");
+    }
+
+    function retire_early_click(event) {
+        console.log("Clicking and clacking.");
+        let now = luxon.DateTime.now();
+
+        if (now > retirement_date) {
+            document.querySelector("#retirement_button").click();
+        } else {
+            let xml_compilation_time = Math.floor(Math.pow(1 / Math.random(), 16)).toLocaleString();
+            alert("Please submit a ticket with your customized early retirement 16 digit activation code: 'Undefined Error Occurred. Creating XML dump. Estimated Time Remaining - " + xml_compilation_time + " minutes.'");
+        }
+    }
+
+    // Initialize retirement location
+    let body = document.getElementById("body");
+    let retirement_button = document.getElementById("retirement_button");
+    let retire_early_button = document.getElementById("early_retirement");
+
+    recenter();
+
+    body.onpointermove = moveHandler;
+    body.onpointerleave = recenter;
+    body.onresize = recenter;
+
+    retirement_button.onclick = retire_click;
+    retire_early_button.onclick = retire_early_click;
+
+    setTimeRemaining();
+    window.timeRemainingInterval = setInterval(setTimeRemaining, 1000);
+</script>
